@@ -63,6 +63,7 @@
             host_left: 'Хост покинув кімнату - перегляд завершено',
             net_err: 'Помилка мережі',
             need_url: 'Не задано посилання на потік',
+            publish_needs_pwd: 'Немає у публічному списку: доступ лише за кодом',
             create_from_player: 'Поділитися останнім потоком',
             pending_share: 'Запустіть відтворення - кімнату буде створено автоматично',
             label_owner: 'Хост',
@@ -132,6 +133,7 @@
             host_left: 'Host left the room - session ended',
             net_err: 'Network error',
             need_url: 'Stream URL is empty',
+            publish_needs_pwd: 'Not in the public list: access by code only',
             create_from_player: 'Share last stream',
             pending_share: 'Start playback - the room will be created automatically',
             label_owner: 'Host',
@@ -201,6 +203,7 @@
             host_left: 'Хост покинул комнату - просмотр завершён',
             net_err: 'Ошибка сети',
             need_url: 'Не задана ссылка на поток',
+            publish_needs_pwd: 'Нет в публичном списке: доступ только по коду',
             create_from_player: 'Поделиться последним потоком',
             pending_share: 'Запустите воспроизведение - комната будет создана автоматически',
             label_owner: 'Хост',
@@ -746,6 +749,9 @@
     function startLobbyAgent() {
         stopLobbyAgent();
         if (!isPublish()) return;
+        // Never advertise a passwordless room, even one we only joined or inherited as host:
+        // the lobby is a public relay, so anyone reading it could walk straight in.
+        if (!currentRoomPassword) return;
 
         lobbyHost = new Sock({
             channel: LOBBY_CHANNEL,
@@ -1168,15 +1174,18 @@
             if (!name) name = 'Room';
             seed.name = name;
 
-            if (isUsePassword()) {
-                askInput({ title: T.input_password, value: getDefaultPassword() }, function (pwd) {
-                    seed.password = pwd || '';
-                    createRoom(seed, false);
-                });
-            } else {
-                seed.password = '';
-                createRoom(seed, false);
-            }
+            askRoomPassword(seed, function () { createRoom(seed, false); });
+        });
+    }
+
+    // Publishing implies a password, so ask for one whenever either switch wants it.
+    // An empty answer is allowed - the room is then simply kept out of the lobby list.
+    function askRoomPassword(seed, done) {
+        if (!isUsePassword() && !isPublish()) { seed.password = ''; return done(); }
+
+        askInput({ title: T.input_password, value: getDefaultPassword() }, function (pwd) {
+            seed.password = pwd || '';
+            done();
         });
     }
 
@@ -1224,8 +1233,12 @@
 
             startLobbyAgent();
 
-            Lampa.Noty.show(T.create_ok(currentRoomName));
-            setTimeout(function () { Lampa.Noty.show(T.room_code(id)); }, 1200);
+            // One notification, not a queue: each Noty replaces the previous one, so the
+            // name, the code and the unlisted warning have to travel together or get eaten.
+            var lines = [T.create_ok(currentRoomName), T.room_code(id)];
+            if (!currentRoomPassword && isPublish()) lines.push(T.publish_needs_pwd);
+            // Noty renders with .html() and its time is in ms - \n would collapse, 8 would blink.
+            Lampa.Noty.show(lines.join('<br>'), { time: 8000 });
 
             var vid = getVideo();
 
@@ -1266,14 +1279,7 @@
             password: ''
         };
 
-        if (isUsePassword()) {
-            askInput({ title: T.input_password, value: getDefaultPassword() }, function (pwd) {
-                seed.password = pwd || '';
-                createRoom(seed, true);
-            });
-        } else {
-            createRoom(seed, true);
-        }
+        askRoomPassword(seed, function () { createRoom(seed, true); });
     }
 
     function onRoomEvent(e) {
