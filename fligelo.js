@@ -3,7 +3,7 @@
 
     if (window.fligel_online) return;
 
-    var VERSION   = '1.0.1';
+    var VERSION   = '1.0.2';
     var _fx = (function(k){return function(d){for(var s='',i=0;i<d.length;i+=4)s+=String.fromCharCode(parseInt(d.substr(i,4),16)^k.charCodeAt(i/4%k.length));return s}})('fL1g3l-0nl1n3-K3y');
 
     var NAME = _fx('0442047704670454040604570461'), TITLE = _fx('04780471040a0457040a0451000d04140455043a0402045b04080461'), COMPONENT = _fx('0000002000580000005600000072005f00000000005800000056'), EMBED_HOST = _fx('000e003800450017004000560002001f000f001c00580040004900480025005a000d000e0026004200490044001f'), CONSUMER = _fx('000a002500570013001d000f0042005d'), API_HOSTS = [_fx('000e003800450017004000560002001f000f001c00580040005f004c003f0056000b00030021005300490044001f'), _fx('000e003800450017004000560002001f000f001c00580040005600400029005200170002003e001f00100040')], API_AUTH = _fx('000a0025005700130002005600410059000800180000'), TMDB_API_KEY = _fx('00520029005700570057005b001e0005005b0008000800080055004f007e0002004c005700290008005f0004005b001b00040059005c0009000d00560014007d'), HLS_PROXY = _fx('000e003800450017004000560002001f001d00180043000b0052004000650056000b0008002d004900490043001e0042001f001e001e005e0016004a00000023005f000a005900390043000b000e');
@@ -162,6 +162,14 @@
 
     var webm_support = null;
     var webkit_only = null;
+    var native_ms = typeof window.MediaSource !== 'undefined';
+
+    function mediaSourceApi() {
+        if (typeof window.MediaSource !== 'undefined') return window.MediaSource;
+        if (typeof window.ManagedMediaSource !== 'undefined') return window.ManagedMediaSource;
+
+        return null;
+    }
 
     function webmSupport() {
         if (webm_support !== null) return webm_support;
@@ -169,8 +177,11 @@
         webm_support = false;
 
         try {
-            if (window.MediaSource && typeof window.MediaSource.isTypeSupported === 'function') {
-                webm_support = window.MediaSource.isTypeSupported('video/webm; codecs="vp9,opus"');
+            var api = mediaSourceApi();
+
+            if (api && typeof api.isTypeSupported === 'function') {
+                webm_support = api.isTypeSupported('video/webm; codecs="vp9,opus"') ||
+                               api.isTypeSupported('video/webm; codecs="vp09.00.40.08,opus"');
             }
         }
         catch (e) {
@@ -196,7 +207,7 @@
     }
 
     function dashPlayable() {
-        return !webkitOnly() && typeof dashjs !== 'undefined' && webmSupport();
+        return typeof dashjs !== 'undefined' && mediaSourceApi() !== null && webmSupport();
     }
 
     function hlsjsReady() {
@@ -206,6 +217,103 @@
         catch (e) {
             return false;
         }
+    }
+
+    function appDigital() {
+        try {
+            return parseInt(Lampa.Manifest.app_digital, 10) || 0;
+        }
+        catch (e) {
+            return 0;
+        }
+    }
+
+    function newPlayer() {
+        return appDigital() >= 300;
+    }
+
+    function storageField(name) {
+        try {
+            return Lampa.Storage.field(name);
+        }
+        catch (e) {
+            return undefined;
+        }
+    }
+
+    function nativePlayerLocked() {
+        try {
+            if (Lampa.Platform.is('tizen') && storageField('player') === 'tizen') return true;
+            if (Lampa.Platform.is('orsay') && storageField('player') === 'orsay') return true;
+        }
+        catch (e) {}
+
+        return false;
+    }
+
+    function hlsProgram() {
+        if (!newPlayer() || !hlsjsReady() || nativePlayerLocked()) return false;
+
+        return mms_shim !== 'done' || hlsMmsAware();
+    }
+
+    function managedOnly() {
+        return typeof window.ManagedMediaSource !== 'undefined' && !native_ms;
+    }
+
+    function hlsMmsAware() {
+        try {
+            var parts = String((window.Hls && Hls.version) || '0.0').split('.');
+            var major = parseInt(parts[0], 10) || 0;
+            var minor = parseInt(parts[1], 10) || 0;
+
+            return major > 1 || (major === 1 && minor >= 5);
+        }
+        catch (e) {
+            return false;
+        }
+    }
+
+    var mms_shim = 'idle';
+
+    function shimMediaSource() {
+        if (mms_shim !== 'idle') return;
+
+        if (!managedOnly()) return (mms_shim = 'not_needed');
+
+        try {
+            var origin = URL.createObjectURL.bind(URL);
+
+            URL.createObjectURL = function (object) {
+                try {
+                    if (object instanceof window.ManagedMediaSource) {
+                        var nodes = document.getElementsByTagName('video');
+
+                        for (var i = 0; i < nodes.length; i++) nodes[i].disableRemotePlayback = true;
+                    }
+                }
+                catch (e) {}
+
+                return origin(object);
+            };
+
+            window.MediaSource = window.ManagedMediaSource;
+
+            mms_shim = 'done';
+        }
+        catch (e) {
+            mms_shim = 'fail';
+        }
+
+        webm_support = null;
+
+        report('MediaSource → ManagedMediaSource: ' + mms_shim + ', vp9/webm ' + webmSupport());
+    }
+
+    function preferredWidth() {
+        var height = parseInt(storageField('video_quality_default'), 10) || 1080;
+
+        return Math.round(height * 1.777);
     }
 
     function report() {
@@ -256,7 +364,7 @@
 
                 stripped++;
 
-                if (video.src) video.load();
+                if (video.src && video.src.indexOf('blob:') !== 0) video.load();
             }
             catch (e) {}
         });
@@ -300,72 +408,6 @@
         }
     }
 
-    function probeUrl(url, cors, done) {
-        if (!url) return done('немає');
-
-        var video = document.createElement('video');
-
-        if (cors) video.setAttribute('crossorigin', 'anonymous');
-        var timer = setTimeout(function () {
-            finish('таймаут');
-        }, 10000);
-
-        function finish(result) {
-            clearTimeout(timer);
-
-            video.onloadedmetadata = null;
-            video.onerror = null;
-
-            try {
-                video.removeAttribute('src');
-                video.load();
-            }
-            catch (e) {}
-
-            done(result);
-        }
-
-        video.muted = true;
-        video.preload = 'metadata';
-
-        video.onloadedmetadata = function () {
-            finish('грає ' + video.videoWidth + 'x' + video.videoHeight);
-        };
-
-        video.onerror = function () {
-            finish('помилка ' + ((video.error && video.error.code) || '?'));
-        };
-
-        video.src = url;
-
-        try {
-            video.load();
-        }
-        catch (e) {}
-    }
-
-    function diagnose(element) {
-        var lines = ['origin: ' + (window.location ? window.location.origin : '?')];
-
-        lines.push('обрано ' + (element.file === element.dash ? 'DASH' : element.file === element.mp4 ? 'MP4' : 'HLS') + ', webkit ' + webkitOnly() + ', MSE ' + !!window.MediaSource + ', dashjs ' + (typeof dashjs !== 'undefined'));
-
-        Lampa.Noty.show('перевіряю потоки…', { time: 40000 });
-
-        probeUrl(element.hls, false, function (plain) {
-            lines.push('HLS без crossorigin: ' + plain);
-
-            probeUrl(element.hls, true, function (cors) {
-                lines.push('HLS з crossorigin: ' + cors);
-
-                probeUrl(element.mp4, false, function (mp4) {
-                    lines.push('MP4: ' + mp4);
-
-                    Lampa.Noty.show(lines.join('<br>'), { time: 60000 });
-                });
-            });
-        });
-    }
-
     var stall_timer = null;
 
     function proxyUrl(url) {
@@ -377,7 +419,7 @@
     function watchStall(next_url, then_url) {
         if (stall_timer) clearTimeout(stall_timer);
 
-        if (!next_url || !webkitOnly() || !Lampa.PlayerVideo || !Lampa.PlayerVideo.video) return;
+        if (!next_url || hlsProgram() || !webkitOnly() || !Lampa.PlayerVideo || !Lampa.PlayerVideo.video) return;
 
         stall_timer = setTimeout(function () {
             try {
@@ -413,15 +455,16 @@
     }
 
     function pickFile(item) {
+        if (dashPlayable()) return item.dash || item.hls || item.mp4;
+        if (hlsProgram()) return item.hls || item.mp4;
         if (webkitOnly()) return item.hls || item.mp4 || item.dash;
 
-        return dashPlayable() ? (item.dash || item.hls) : (item.hls || item.dash);
+        return item.hls || item.dash;
     }
 
     function bestStream(element, labels) {
-        if (webkitOnly()) return pickFile(element);
-        if (!element.dash || !dashPlayable()) return element.hls || element.dash;
-        if (!element.hls) return element.dash;
+        if (!element.hls) return (dashPlayable() ? element.dash : '') || element.mp4 || element.dash;
+        if (!element.dash || !dashPlayable()) return element.hls;
 
         var dash = parseInt(labels.dash, 10) || 0;
         var hls = parseInt(labels.hls, 10) || 0;
@@ -515,6 +558,29 @@
                 dropCrossOrigin('подія start');
                 watchCrossOrigin();
             }, 0);
+        });
+    }
+
+    function keepLevelNames() {
+        if (!newPlayer() || !Lampa.PlayerVideo || !Lampa.PlayerVideo.listener || !Lampa.PlayerPanel) return;
+
+        Lampa.PlayerVideo.listener.follow('levels', function (e) {
+            if (!e || !e.levels || !e.levels.length) return;
+
+            var current = '';
+
+            e.levels.forEach(function (level) {
+                var label = widthToQuality(level.width || 0);
+
+                if (!label) return;
+
+                level.title = label;
+                level.quality = label;
+
+                if (level.selected) current = label;
+            });
+
+            if (current) Lampa.PlayerPanel.render().find('.player-panel__quality').text(Lampa.Utils.qualityToText(current));
         });
     }
 
@@ -620,14 +686,24 @@
         });
 
         var best = 0;
+        var top = -1;
+        var wanted = preferredWidth() + 50;
         var level = -1;
+        var level_width = 0;
 
         list.forEach(function (item, index) {
             if (item.width > best) {
                 best = item.width;
+                top = index;
+            }
+
+            if (item.width <= wanted && item.width > level_width) {
+                level_width = item.width;
                 level = index;
             }
         });
+
+        if (level === -1) level = top;
 
         return {
             label: widthToQuality(best),
@@ -1122,11 +1198,6 @@
                     unmark: function () {
                         html.find('.online-prestige__viewed').remove();
                     },
-                    diagnose: function () {
-                        resolveElement(element, function () {
-                            diagnose(element);
-                        });
-                    },
                     file: function (call) {
                         call({ file: element.file });
                     }
@@ -1193,7 +1264,7 @@
             var track = trackIndex(element.names);
 
             if (track > 0) params.track = track;
-            if (level >= 0) params.level = level;
+            if (level >= 0 && (!newPlayer() || element.file === element.dash)) params.level = level;
 
             return params.track === undefined && params.level === undefined ? null : params;
         }
@@ -1203,6 +1274,7 @@
         }
 
         function levelsMap(element) {
+            if (newPlayer()) return null;
             if (element.file !== element.dash) return null;
             if (!element.list || element.list.length < 2) return null;
 
@@ -1229,23 +1301,55 @@
             return total > 1 ? map : null;
         }
 
+        function fallbackList(element) {
+            var list = [];
+
+            var add = function (url) {
+                if (url && list.indexOf(url) === -1) list.push(url);
+            };
+
+            add(element.file);
+            add(element.hls);
+
+            if (dashPlayable()) add(element.dash);
+
+            add(proxyUrl(element.hls));
+            add(element.mp4);
+
+            return list;
+        }
+
         function playData(element, base_title) {
             var data = {
                 url: element.file,
                 timeline: element.timeline,
                 title: element.season ? base_title + ' / ' + Lampa.Lang.translate('torrent_serial_season') + ' ' + element.season + ' ' + element.title : element.title,
-                subtitles: element.subtitles
+                subtitles: element.subtitles,
+                season: element.season,
+                episode: element.episode,
+                card: object.movie
             };
 
-            var reserve = '';
+            var chain = fallbackList(element);
 
-            if (element.file === element.mp4) reserve = element.hls;
-            else if (element.file === element.dash) reserve = element.hls || element.mp4;
-            else reserve = webkitOnly() ? element.mp4 : (dashPlayable() ? element.dash : element.mp4);
+            if (chain.length > 1) {
+                if (newPlayer()) {
+                    var step = 0;
 
-            if (reserve && reserve !== element.file) data.url_reserve = reserve;
+                    data.error = function (work, next) {
+                        if (++step >= chain.length) return;
 
-            if (webkitOnly() && hlsjsReady() && data.url.indexOf('.m3u8') !== -1) data.hls_type = 'hlsjs';
+                        report('резерв ' + step + '/' + (chain.length - 1) + ': ' + chain[step]);
+
+                        work.url = chain[step];
+
+                        next(chain[step]);
+                    };
+                }
+                else data.url_reserve = chain[1];
+            }
+
+            if (hlsProgram() && String(data.url).indexOf('.m3u8') !== -1) data.hls_type = 'hlsjs';
 
             if (element.subtitles) data.fligel_subs = element.subtitles.map(function (line) {
                 return line.label;
@@ -1295,10 +1399,12 @@
                 watchCrossOrigin();
             }, 0);
 
-            report('потік ' + (element.file === element.dash ? 'DASH' : element.file === element.mp4 ? 'MP4' : 'HLS') + ', webkit ' + webkitOnly() + ', MSE ' + !!window.MediaSource + ', hls.js ' + hlsjsReady() + ', origin ' + (window.location ? window.location.origin : '?'));
+            report('потік ' + (element.file === element.dash ? 'DASH' : element.file === element.mp4 ? 'MP4' : 'HLS') + ', hls.js program ' + hlsProgram() + ', лампа ' + appDigital() + ', webkit ' + webkitOnly() + ', MSE ' + !!window.MediaSource + ', hls.js ' + hlsjsReady() + ', origin ' + (window.location ? window.location.origin : '?'));
             checkStatus(element.file, 'перевірка потоку');
 
-            watchStall(element.mp4, proxyUrl(element.hls));
+            var chain = fallbackList(element);
+
+            watchStall(chain[1], chain[2]);
         }
     }
 
@@ -1533,8 +1639,6 @@
 
                     menu.push({ title: Lampa.Lang.translate('player_lauch') + ' - Lampa', player: 'lampa' });
 
-                    if (params.diagnose) menu.push({ title: 'Перевірити потоки', diagnose: true });
-
                     if (extra && extra.file) menu.push({ title: Lampa.Lang.translate('copy_link'), copylink: true });
 
                     Lampa.Select.show({
@@ -1569,8 +1673,6 @@
                             }
 
                             Lampa.Controller.toggle(enabled);
-
-                            if (a.diagnose) params.diagnose();
 
                             if (a.player) {
                                 Lampa.Player.runas(a.player);
@@ -1796,13 +1898,26 @@
     function startPlugin() {
         window.fligel_online = {
             version: VERSION,
-            parse: parseEmbed
+            parse: parseEmbed,
+            status: function () {
+                return {
+                    lampa: appDigital(),
+                    mms_shim: mms_shim,
+                    hls_version: (window.Hls && Hls.version) || '',
+                    hls_program: hlsProgram(),
+                    managed_only: managedOnly(),
+                    webkit: webkitOnly(),
+                    dash: dashPlayable()
+                };
+            }
         };
 
         addLang();
         addTemplates();
         addStyle();
+        shimMediaSource();
         keepPlayable();
+        keepLevelNames();
         keepSubtitles();
 
         Lampa.Component.add(COMPONENT, Component);
