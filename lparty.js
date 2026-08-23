@@ -9,7 +9,7 @@
 
     var META = {
         name: 'LParty',
-        version: '1.4.2',
+        version: '1.4.3',
         author: 'nrsua, levende'
     };
 
@@ -28,7 +28,7 @@
             param_show_public: 'Відображати публічні кімнати',
             param_show_public_descr: 'Показувати при пошуку кімнати без пароля.',
             param_name: 'Ім\'я користувача',
-            param_name_descr: 'Як вас бачитимуть інші в кімнатах. Порожньо = ідентифікатор Лампи.',
+            param_name_descr: 'Як вас бачитимуть інші в кімнатах. Якщо очистити - буде згенеровано випадкове ім\'я.',
             param_use_pwd: 'Використовувати пароль',
             param_use_pwd_descr: 'Запитувати пароль при створенні кімнати та підставляти у власні кімнати.',
             param_pwd: 'Пароль за замовчуванням',
@@ -98,7 +98,7 @@
             param_show_public: 'Show public rooms',
             param_show_public_descr: 'List rooms without a password when searching.',
             param_name: 'Display name',
-            param_name_descr: 'How others see you in rooms. Empty = Lampa ID.',
+            param_name_descr: 'How others see you in rooms. Clear it to generate a random name.',
             param_use_pwd: 'Use password',
             param_use_pwd_descr: 'Ask for password when creating a room and prefill your default.',
             param_pwd: 'Default password',
@@ -168,7 +168,7 @@
             param_show_public: 'Показывать публичные комнаты',
             param_show_public_descr: 'Показывать при поиске комнаты без пароля.',
             param_name: 'Имя пользователя',
-            param_name_descr: 'Как вас будут видеть в комнатах. Пусто = идентификатор Лампы.',
+            param_name_descr: 'Как вас будут видеть в комнатах. Если очистить - будет сгенерировано случайное имя.',
             param_use_pwd: 'Использовать пароль',
             param_use_pwd_descr: 'Запрашивать пароль при создании комнаты и подставлять в свои комнаты.',
             param_pwd: 'Пароль по умолчанию',
@@ -284,15 +284,49 @@
         return text;
     }
 
-    var pid = Lampa.Storage.get('lampac_unic_id', '');
+    var pid = Lampa.Storage.get('lparty_pid', '');
     if (!pid) {
-        pid = Lampa.Utils.uid(8).toLowerCase();
-        Lampa.Storage.set('lampac_unic_id', pid);
+        pid = Lampa.Utils.uid(12).toLowerCase();
+        Lampa.Storage.set('lparty_pid', pid);
+    }
+
+    var NAME_ADJECTIVES = [
+        'Amber', 'Arctic', 'Atomic', 'Brave', 'Bright', 'Calm', 'Chilly', 'Clever', 'Cosmic', 'Crimson',
+        'Curious', 'Dizzy', 'Dusty', 'Electric', 'Emerald', 'Fancy', 'Fearless', 'Frosty', 'Fuzzy', 'Gentle',
+        'Golden', 'Happy', 'Hidden', 'Humble', 'Indigo', 'Iron', 'Jolly', 'Lively', 'Lucky', 'Lunar',
+        'Magic', 'Marble', 'Mighty', 'Mystic', 'Neon', 'Nimble', 'Noble', 'Northern', 'Plasma', 'Polar',
+        'Quiet', 'Rapid', 'Retro', 'Royal', 'Rusty', 'Scarlet', 'Shiny', 'Silent', 'Silver', 'Sleepy',
+        'Snowy', 'Solar', 'Sunny', 'Swift', 'Thunder', 'Tiny', 'Turbo', 'Velvet', 'Vivid', 'Wild'
+    ];
+
+    var NAME_NOUNS = [
+        'Badger', 'Bandit', 'Bear', 'Beaver', 'Bison', 'Camel', 'Captain', 'Cheetah', 'Comet', 'Condor',
+        'Cookie', 'Coyote', 'Crane', 'Dingo', 'Dolphin', 'Donkey', 'Dragon', 'Eagle', 'Falcon', 'Ferret',
+        'Fox', 'Gecko', 'Ghost', 'Gibbon', 'Griffin', 'Hamster', 'Hawk', 'Hedgehog', 'Heron', 'Husky',
+        'Ibex', 'Jaguar', 'Kitten', 'Koala', 'Kraken', 'Lemur', 'Leopard', 'Lion', 'Llama', 'Lynx',
+        'Mammoth', 'Marmot', 'Meteor', 'Monkey', 'Moose', 'Narwhal', 'Ninja', 'Nomad', 'Ocelot', 'Octopus',
+        'Osprey', 'Otter', 'Owl', 'Panda', 'Panther', 'Parrot', 'Pelican', 'Penguin', 'Pilot', 'Pirate',
+        'Puffin', 'Puma', 'Rabbit', 'Raccoon', 'Ranger', 'Raven', 'Rhino', 'Robot', 'Rocket', 'Salmon',
+        'Seal', 'Shark', 'Sparrow', 'Tiger', 'Toucan', 'Turtle', 'Viking', 'Walrus', 'Wizard', 'Wolf',
+        'Wombat', 'Yeti', 'Zebra'
+    ];
+
+    function pickOne(list) {
+        return list[Math.floor(Math.random() * list.length)];
+    }
+
+    function randomDisplayName() {
+        return pickOne(NAME_ADJECTIVES) + pickOne(NAME_NOUNS) + (10 + Math.floor(Math.random() * 90));
     }
 
     function getDisplayName() {
         var custom = (Lampa.Storage.get('lparty_display_name', '') || '').toString().trim();
-        return custom || pid;
+        if (!custom) {
+            custom = randomDisplayName();
+            Lampa.Storage.set('lparty_display_name', custom);
+            lplog('display name generated: ' + custom);
+        }
+        return custom;
     }
 
     function isUsePassword() {
@@ -2240,6 +2274,12 @@
         if (passwordParamItem) passwordParamItem.toggleClass('hide', !isUsePassword());
     }
 
+    var displayNameParamItem = null;
+    function syncDisplayNameField() {
+        var name = getDisplayName();
+        if (displayNameParamItem) displayNameParamItem.find('.settings-param__value').text(name);
+    }
+
     function registerSettings() {
         if (!Lampa.SettingsApi) return;
 
@@ -2283,8 +2323,13 @@
 
         Lampa.SettingsApi.addParam({
             component: 'lparty',
-            param: { name: 'lparty_display_name', type: 'input', values: '', default: '', placeholder: pid },
-            field: { name: T.param_name, description: T.param_name_descr }
+            param: { name: 'lparty_display_name', type: 'input', values: '', default: '', placeholder: getDisplayName() },
+            field: { name: T.param_name, description: T.param_name_descr },
+            onRender: function (item) {
+                displayNameParamItem = item;
+                syncDisplayNameField();
+            },
+            onChange: function () { syncDisplayNameField(); }
         });
 
         if (Lampa.Platform.is('android')) {
@@ -2695,5 +2740,5 @@
     };
 
     registerSettings();
-    console.log('[LParty]', lplog('started, relay: ' + getRelay() + ', lang: ' + _rawLang));
+    console.log('[LParty]', lplog('started, relay: ' + getRelay() + ', lang: ' + _rawLang + ', name: ' + getDisplayName()));
 })();
