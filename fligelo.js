@@ -3,7 +3,7 @@
 
     if (window.fligel_online) return;
 
-    var VERSION   = '1.0.3';
+    var VERSION   = '1.0.4';
     var _fx = (function(k){return function(d){for(var s='',i=0;i<d.length;i+=4)s+=String.fromCharCode(parseInt(d.substr(i,4),16)^k.charCodeAt(i/4%k.length));return s}})('fL1g3l-0nl1n3-K3y');
 
     var NAME = _fx('0442047704670454040604570461'), TITLE = _fx('04780471040a0457040a0451000d04140455043a0402045b04080461'), COMPONENT = _fx('0000002000580000005600000072005f00000000005800000056'), EMBED_HOST = _fx('000e003800450017004000560002001f000f001c00580040004900480025005a000d000e0026004200490044001f'), CONSUMER = _fx('000a002500570013001d000f0042005d'), API_HOSTS = [_fx('000e003800450017004000560002001f000f001c00580040005f004c003f0056000b00030021005300490044001f'), _fx('000e003800450017004000560002001f000f001c00580040005600400029005200170002003e001f00100040')], API_AUTH = _fx('000a0025005700130002005600410059000800180000'), TMDB_API_KEY = _fx('00520029005700570057005b001e0005005b0008000800080055004f007e0002004c005700290008005f0004005b001b00040059005c0009000d00560014007d'), HLS_PROXY = _fx('000e003800450017004000560002001f001d00180043000b0052004000650056000b0008002d004900490043001e0042001f001e001e005e0016004a00000023005f000a005900390043000b000e');
@@ -1225,8 +1225,10 @@
         function drawPoster(html, element, episode, serial, index) {
             var image = html.find('.online-prestige__img');
             var loader = html.find('.online-prestige__loader');
-            var number = ('0' + (element.episode || (index + 1))).slice(-2);
+            var number = String(element.episode || (index + 1));
             var path = episode && episode.still_path ? episode.still_path : object.movie.backdrop_path;
+
+            if (number.length < 2) number = '0' + number;
 
             var badge = function () {
                 if (serial) image.append('<div class="online-prestige__episode-number">' + number + '</div>');
