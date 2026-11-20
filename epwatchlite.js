@@ -21,6 +21,8 @@
         bal_timeout:    20000,
         events_timeout: 40000,
         events_ttl:     10 * MIN,
+        adapter_timeout: 2 * MIN,
+        history_max:    50,
         fail_retry:     4 * HOUR,
         fail_attempts:  3,
         fail_age:       2 * DAY,
@@ -36,11 +38,11 @@
         epwlite_plugins_head:         { uk: 'Або оберіть онлайн-плагін:', en: 'Or pick an online plugin:', ru: 'Или выберите онлайн-плагин:' },
         epwlite_plugins_head_movie:   { uk: 'Оберіть онлайн-плагін:', en: 'Pick an online plugin:', ru: 'Выберите онлайн-плагин:' },
         epwlite_no_plugins:           { uk: 'Немає сумісних онлайн-плагінів', en: 'No compatible online plugins', ru: 'Нет совместимых онлайн-плагинов' },
-        epwlite_no_plugins_sub:       { uk: 'Підтримуються плагіни на базі Lampac (/lite)', en: 'Lampac-based plugins (/lite) are supported', ru: 'Поддерживаются плагины на базе Lampac (/lite)' },
+        epwlite_no_plugins_sub:       { uk: 'Підтримуються: {0}', en: 'Supported: {0}', ru: 'Поддерживаются: {0}' },
         epwlite_sources_head:         { uk: 'Оберіть джерело', en: 'Pick a source', ru: 'Выберите источник' },
         epwlite_source_absent:        { uk: 'зараз не знаходить цю картку', en: 'does not find this title yet', ru: 'пока не находит эту карточку' },
         epwlite_no_sources:           { uk: 'Немає доступних джерел', en: 'No sources available', ru: 'Нет доступных источников' },
-        epwlite_source_rch:           { uk: 'Це джерело працює лише через RCH - не підтримується', en: 'This source works only via RCH - not supported', ru: 'Этот источник работает только через RCH - не поддерживается' },
+        epwlite_source_unsupported:   { uk: 'Це джерело не підтримується ({0})', en: 'This source is not supported ({0})', ru: 'Этот источник не поддерживается ({0})' },
         epwlite_bal_seasons:          { uk: 'сезони:', en: 'seasons:', ru: 'сезоны:' },
         epwlite_no_voices:            { uk: 'На цьому джерелі озвучень не знайдено', en: 'No voice-overs found on this source', ru: 'На этом источнике озвучек не найдено' },
         epwlite_pick_show:            { uk: 'Оберіть потрібний серіал', en: 'Pick the right show', ru: 'Выберите нужный сериал' },
@@ -73,7 +75,7 @@
         epwlite_gone_plugin:          { uk: 'плагін зник або більше не підтримується', en: 'the plugin is gone or no longer supported', ru: 'плагин пропал или больше не поддерживается' },
         epwlite_gone_server:          { uk: 'сервер плагіна недоступний кілька днів', en: 'the plugin server has been down for several days', ru: 'сервер плагина недоступен несколько дней' },
         epwlite_gone_source:          { uk: 'джерело зникло з плагіна', en: 'the source is gone from the plugin', ru: 'источник пропал из плагина' },
-        epwlite_gone_rch:             { uk: 'джерело перейшло на RCH (не підтримується)', en: 'the source switched to RCH (not supported)', ru: 'источник перешёл на RCH (не поддерживается)' },
+        epwlite_gone_unsupported:     { uk: 'джерело стало непідтримуваним', en: 'the source became unsupported', ru: 'источник стал неподдерживаемым' },
         epwlite_fail_badge:           { uk: 'джерело недоступне', en: 'source unavailable', ru: 'источник недоступен' },
         epwlite_empty:                { uk: 'Підписок поки немає', en: 'No subscriptions yet', ru: 'Подписок пока нет' },
         epwlite_settings_author:      { uk: 'Автор', en: 'Author', ru: 'Автор' },
@@ -92,7 +94,11 @@
         epwlite_plugins_none:         { uk: 'Встановлених плагінів не знайдено', en: 'No installed plugins found', ru: 'Установленных плагинов не найдено' },
         epwlite_check_running:        { uk: 'Перевірка вже триває', en: 'A check is already running', ru: 'Проверка уже идёт' },
         epwlite_check_start:          { uk: 'Перевірка запущена', en: 'Check started', ru: 'Проверка запущена' },
-        epwlite_check_done:           { uk: 'Перевірено: {0}, нових сповіщень: {1}', en: 'Checked: {0}, new notifications: {1}', ru: 'Проверено: {0}, новых уведомлений: {1}' }
+        epwlite_check_done:           { uk: 'Перевірено: {0}, нових сповіщень: {1}', en: 'Checked: {0}, new notifications: {1}', ru: 'Проверено: {0}, новых уведомлений: {1}' },
+        epwlite_settings_history:     { uk: 'Історія сповіщень', en: 'Notification history', ru: 'История уведомлений' },
+        epwlite_settings_history_desc:{ uk: 'Усі сповіщення EpW Lite (вкладка «EpW Lite» у дзвіночку Lampa)', en: 'All EpW Lite notifications (the "EpW Lite" tab in the Lampa bell)', ru: 'Все уведомления EpW Lite (вкладка «EpW Lite» в колокольчике Lampa)' },
+        epwlite_history_empty:        { uk: 'Сповіщень від EpW Lite поки немає', en: 'No EpW Lite notifications yet', ru: 'Уведомлений от EpW Lite пока нет' },
+        epwlite_err_unknown:          { uk: 'Помилка', en: 'Error', ru: 'Ошибка' }
     };
 
     function resolveLang() {
@@ -126,6 +132,12 @@
     }
 
     function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+    function copyOwn(o) {
+        var x = {};
+        for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) x[k] = o[k];
+        return x;
+    }
 
     function trim(s) { return ('' + (s == null ? '' : s)).replace(/^\s+|\s+$/g, ''); }
 
@@ -221,7 +233,7 @@
     function saveSubs(list) { try { Lampa.Storage.set(KEY_SUBS, list); } catch (e) {} }
 
     function subId(s) {
-        return 'epwl' + hashStr([s.media, s.tmdb_id, s.plugin_host || '', lc(s.balanser), trim(s.voice)].join('|'));
+        return 'epwl' + hashStr([s.media, s.tmdb_id, s.adapter || '', s.plugin_key || '', lc(s.balanser), trim(s.voice)].join('|'));
     }
 
     function subsOf(tmdbId, media) {
@@ -242,7 +254,7 @@
         saveSubs(loadSubs().filter(function (s) { return s.id !== id; }));
     }
 
-    function http(url, timeout, headers) {
+    function http(url, timeout, headers, body, contentType) {
         return new Promise(function (resolve) {
             var done = false;
             function fin(r) { if (!done) { done = true; resolve(r); } }
@@ -251,11 +263,12 @@
                 n.timeout(timeout || 15000);
                 var params = { dataType: 'text' };
                 if (headers) params.headers = headers;
+                if (body && contentType) params.contentType = contentType;
                 n['native'](url, function (data) {
                     fin({ ok: true, status: 200, text: typeof data === 'string' ? data : (data == null ? '' : JSON.stringify(data)) });
                 }, function (xhr) {
                     fin({ ok: false, status: (xhr && xhr.status) || 0, text: (xhr && typeof xhr.responseText === 'string') ? xhr.responseText : '' });
-                }, false, params);
+                }, body || false, params);
             } catch (e) { fin({ ok: false, status: 0, text: '' }); }
         });
     }
@@ -447,21 +460,38 @@
         return { host: m[1].replace(/\/+$/, ''), token: t ? t[1] : '', aes: a ? a[1] : '' };
     }
 
+    var descSig = '';
+
     function describePlugin(p) {
+        var sig = adapters().map(function (a) { return a.id; }).join(',');
+        if (sig !== descSig) { descSig = sig; descMemo = {}; }
         if (descMemo[p.url]) return Promise.resolve(descMemo[p.url]);
         return pluginSource(p.url).then(function (src) {
             var stored = storeGet(KEY_DESC, {});
             if (!stored || typeof stored !== 'object' || Array.isArray(stored)) stored = {};
-            var info = src ? parseLampac(src) : null;
-            var d;
+            var d = null;
             if (src && src.indexOf('epwatchlite_ready') >= 0) d = { url: p.url, kind: 'self', name: META.name };
-            else if (info) {
-                d = { url: p.url, kind: 'lampac', host: info.host, token: info.token, aes: info.aes, name: p.name || hostLabel(info.host) };
-                stored[p.url] = d;
-                try { Lampa.Storage.set(KEY_DESC, stored); } catch (e) {}
+            else if (src) {
+                adapters().some(function (a) {
+                    var info = null;
+                    try { info = a.detect(src, p); } catch (e) {}
+                    if (!info || typeof info !== 'object') return false;
+                    d = copyOwn(info);
+                    d.url = p.url;
+                    d.kind = 'ok';
+                    d.adapter = a.id;
+                    d.key = trim(info.key) || p.url;
+                    d.label = trim(info.label) || hostLabel(p.url);
+                    d.name = p.name || trim(info.name) || d.label;
+                    return true;
+                });
+                if (d) {
+                    try { stored[p.url] = JSON.parse(JSON.stringify(d)); Lampa.Storage.set(KEY_DESC, stored); } catch (e) {}
+                }
+                else d = { url: p.url, kind: 'unsupported', name: p.name || hostLabel(p.url) };
             }
-            else if (!src && stored[p.url]) d = stored[p.url];
-            else d = { url: p.url, kind: src ? 'unsupported' : 'unknown', name: p.name || hostLabel(p.url) };
+            else if (stored[p.url] && adapterOf(stored[p.url].adapter)) d = stored[p.url];
+            else d = { url: p.url, kind: 'unknown', name: p.name || hostLabel(p.url) };
             if (d.kind !== 'unknown') descMemo[p.url] = d;
             return d;
         });
@@ -477,8 +507,8 @@
         return allPlugins().then(function (list) {
             var out = [], seen = {};
             list.forEach(function (d) {
-                if (!d || d.kind !== 'lampac') return;
-                var k = d.host + '|' + d.token;
+                if (!d || d.kind !== 'ok') return;
+                var k = d.adapter + '|' + d.key;
                 if (seen[k]) return;
                 seen[k] = 1;
                 out.push(d);
@@ -490,10 +520,10 @@
     function pluginFor(s) {
         var p = first(installedPlugins(), function (x) { return x.url === s.plugin; });
         return (p ? describePlugin(p) : Promise.resolve(null)).then(function (d) {
-            if (d && d.kind === 'lampac') return d;
-            if (!s.plugin_host) return null;
+            if (d && d.kind === 'ok' && d.adapter === s.adapter) return d;
+            if (!s.plugin_key) return null;
             return compatiblePlugins().then(function (list) {
-                return first(list, function (x) { return x.host === s.plugin_host; });
+                return first(list, function (x) { return x.adapter === s.adapter && x.key === s.plugin_key; });
             });
         });
     }
@@ -690,7 +720,9 @@
     }
 
     function withLink(entry, link) {
-        return { name: entry.name, balanser: entry.balanser, url: entry.url, rch: entry.rch, show: entry.show, link: link ? absUrl(link, entry.url) : '' };
+        var x = copyOwn(entry);
+        x.link = link ? (absUrl(link, entry.url) || link) : '';
+        return x;
     }
 
     function lpFetchShow(d, entry, sp, s, t) {
@@ -802,6 +834,141 @@
         });
     }
 
+    var LAMPAC = {
+        id: 'lampac',
+        name: 'Lampac',
+        detect: function (src) {
+            var info = parseLampac(src);
+            if (!info) return null;
+            return { key: info.host + '|' + info.token, label: hostLabel(info.host), host: info.host, token: info.token, aes: info.aes };
+        },
+        sources: function (d, sp, serial) {
+            return lpEvents(d, sp, serial).then(function (ev) {
+                if (!ev.ok) return { ok: false, msg: ev.accsdb ? (ev.msg || L('epwlite_err_access')) : '' };
+                return {
+                    ok: true,
+                    list: ev.list.map(function (e) {
+                        return { id: e.balanser, name: e.name, url: e.url, show: e.show, unsupported: e.rch ? 'RCH' : '' };
+                    })
+                };
+            });
+        },
+        search: function (d, entry, sp, movie) {
+            return lpSearch(d, entry, sp, movie).then(function (r) {
+                return { candidates: r.candidates, seasons: r.seasons, unsupported: r.rch ? 'RCH' : '' };
+            });
+        },
+        seasons: lpDiscoverSeasons,
+        probe: lpProbe,
+        probeMovie: lpProbeMovie
+    };
+
+    function validAdapter(a) {
+        return !!a && typeof a === 'object' && typeof a.id === 'string' && !!trim(a.id)
+            && typeof a.detect === 'function' && typeof a.sources === 'function'
+            && (typeof a.probe === 'function' || typeof a.probeMovie === 'function');
+    }
+
+    function adapters() {
+        var list = [LAMPAC], seen = { lampac: 1 };
+        var ext = window.epwatch_adapters;
+        if (Array.isArray(ext)) ext.forEach(function (a) {
+            if (validAdapter(a) && !seen[a.id]) { seen[a.id] = 1; list.push(a); }
+        });
+        return list;
+    }
+
+    function adapterOf(id) { return first(adapters(), function (a) { return a.id === id; }); }
+
+    function adapterNames() { return adapters().map(function (a) { return a.name || a.id; }).join(', '); }
+
+    function supports(d, media) {
+        var a = d && adapterOf(d.adapter);
+        if (!a) return false;
+        return media === 'movie' ? typeof a.probeMovie === 'function' : typeof a.probe === 'function';
+    }
+
+    function guard(fn, fallback) {
+        return new Promise(function (resolve) {
+            var done = false;
+            function fin(v) { if (!done) { done = true; clearTimeout(timer); resolve(v == null ? fallback : v); } }
+            var timer = setTimeout(function () { fin(fallback); }, CFG.adapter_timeout);
+            try { Promise.resolve(fn()).then(fin, function () { fin(fallback); }); }
+            catch (e) { fin(fallback); }
+        });
+    }
+
+    function normVoices(list) {
+        var out = [], seen = {};
+        (Array.isArray(list) ? list : []).forEach(function (v) {
+            var name = trim(v && typeof v === 'object' ? v.name : v);
+            if (!name || seen[lc(name)]) return;
+            seen[lc(name)] = 1;
+            out.push({ name: name });
+        });
+        return out;
+    }
+
+    function srcList(d, sp, serial) {
+        var a = adapterOf(d.adapter);
+        if (!a) return Promise.resolve({ ok: false, msg: '', list: [] });
+        return guard(function () { return a.sources(d, sp, serial); }, { ok: false }).then(function (r) {
+            if (!r.ok || !Array.isArray(r.list)) return { ok: false, msg: r.msg ? '' + r.msg : '', list: [] };
+            var list = [];
+            r.list.forEach(function (e) {
+                if (!e || typeof e !== 'object') return;
+                var id = trim(e.id || e.balanser);
+                if (!id) return;
+                var x = copyOwn(e);
+                x.balanser = id;
+                x.name = trim(e.name) || id;
+                x.url = e.url ? '' + e.url : '';
+                x.show = e.show !== false;
+                x.unsupported = e.unsupported ? '' + e.unsupported : '';
+                list.push(x);
+            });
+            return { ok: true, list: list };
+        });
+    }
+
+    function srcSearch(d, entry, sp, movie) {
+        var a = adapterOf(d.adapter), empty = { candidates: [], seasons: null, unsupported: '' };
+        if (!a || typeof a.search !== 'function') return Promise.resolve(empty);
+        return guard(function () { return a.search(d, entry, sp, movie); }, empty).then(function (r) {
+            return {
+                candidates: (Array.isArray(r.candidates) ? r.candidates : []).filter(function (c) { return c && c.link; }).map(function (c) {
+                    return { title: '' + (c.title || ''), year: parseInt(c.year, 10) || 0, details: '' + (c.details || ''), img: '' + (c.img || ''), link: '' + c.link, recommended: !!c.recommended };
+                }),
+                seasons: Array.isArray(r.seasons) ? r.seasons : null,
+                unsupported: r.unsupported ? '' + r.unsupported : ''
+            };
+        });
+    }
+
+    function srcSeasons(d, entry, sp) {
+        var a = adapterOf(d.adapter);
+        if (!a || typeof a.seasons !== 'function') return Promise.resolve([]);
+        return guard(function () { return a.seasons(d, entry, sp); }, []).then(function (r) {
+            return (Array.isArray(r) ? r : []).map(function (n) { return parseInt(n, 10) || 0; }).filter(function (n) { return n > 0; });
+        });
+    }
+
+    function srcProbe(d, entry, sp, season, voice) {
+        var a = adapterOf(d.adapter), empty = { maxEpisode: 0, voices: [] };
+        if (!a || typeof a.probe !== 'function') return Promise.resolve(empty);
+        return guard(function () { return a.probe(d, entry, sp, season, voice); }, { maxEpisode: 0, voices: [], error: true }).then(function (r) {
+            return { maxEpisode: parseInt(r.maxEpisode, 10) || 0, voices: normVoices(r.voices), error: !!r.error };
+        });
+    }
+
+    function srcProbeMovie(d, entry, sp) {
+        var a = adapterOf(d.adapter), empty = { available: false, voices: [] };
+        if (!a || typeof a.probeMovie !== 'function') return Promise.resolve(empty);
+        return guard(function () { return a.probeMovie(d, entry, sp); }, empty).then(function (r) {
+            return { available: !!r.available, voices: normVoices(r.voices).map(function (v) { return v.name; }) };
+        });
+    }
+
     function movieKey(balanser, voice) { return lc(balanser) + '\t' + trim(voice); }
 
     function latestFullyAired(show) {
@@ -818,12 +985,12 @@
     function resolveStructure(d, entry, sp, show) {
         var tmdbSeasons = show.seasons.length;
         if (tmdbSeasons <= 1 || !entry) return Promise.resolve('tmdb');
-        return lpDiscoverSeasons(d, entry, sp).then(function (bal) {
+        return srcSeasons(d, entry, sp).then(function (bal) {
             if (bal.length !== 1) return 'tmdb';
             var anchor = latestFullyAired(show);
             var s1 = first(show.seasons, function (s) { return s.season_number === 1; });
             var s1c = s1 ? s1.episode_count : 0;
-            return lpProbe(d, entry, sp, 1, '').then(function (p) {
+            return srcProbe(d, entry, sp, 1, '').then(function (p) {
                 if (anchor && anchor.season_number === 1 && p.maxEpisode === anchor.episode_count) return 'tmdb';
                 return s1c > 0 && p.maxEpisode > s1c ? 'absolute' : 'tmdb';
             });
@@ -919,13 +1086,14 @@
         return pluginFor(s).then(function (d) {
             if (!d) return { fail: 'plugin' };
             s.plugin = d.url;
-            s.plugin_host = d.host;
-            return lpEvents(d, sp, serial).then(function (ev) {
+            s.plugin_key = d.key;
+            s.adapter = d.adapter;
+            return srcList(d, sp, serial).then(function (ev) {
                 if (!ev.ok) return { d: d, fail: 'server' };
                 if (!s.balanser) return { d: d, list: ev.list };
                 var e = first(ev.list, function (x) { return lc(x.balanser) === lc(s.balanser); });
                 if (!e) return { d: d, fail: 'source' };
-                if (e.rch) return { d: d, fail: 'rch' };
+                if (e.unsupported) return { d: d, fail: 'unsupported' };
                 if (e.name) s.bname = e.name;
                 return { d: d, entry: withLink(e, s.link), list: ev.list };
             });
@@ -970,7 +1138,8 @@
                     s.last_episode = ep.episode;
                 });
                 if (!voiceMode || !src || !src.entry) return;
-                return lpProbe(src.d, src.entry, sp, es.effectiveSeason, s.voice).then(function (pr) {
+                return srcProbe(src.d, src.entry, sp, es.effectiveSeason, s.voice).then(function (pr) {
+                    if (pr.error) return;
                     var newMax = Math.max(s.last_voice_episode || 0, pr.maxEpisode);
                     var cap = es.seasonTotal > 0 ? es.seasonTotal : newMax;
                     if (newMax > cap) newMax = cap;
@@ -1016,11 +1185,11 @@
                     s.next_check = now + CFG.fail_retry;
                     return res;
                 }
-                var entries = s.balanser ? [src.entry] : src.list.filter(function (e) { return !e.rch && e.show; });
+                var entries = s.balanser ? [src.entry] : src.list.filter(function (e) { return !e.unsupported && e.show; });
                 var seen = (s.seen || []).slice(), map = {};
                 seen.forEach(function (k) { map[lc(k)] = 1; });
                 return seq(entries, function (e) {
-                    return lpProbeMovie(src.d, e, sp).then(function (r) {
+                    return srcProbeMovie(src.d, e, sp).then(function (r) {
                         if (r.available) {
                             (r.voices.length ? r.voices : ['']).forEach(function (v) {
                                 var key = movieKey(e.balanser, v);
@@ -1097,11 +1266,43 @@
         if (noticeTarget) return true;
         try {
             if (!Lampa.Notice || !Lampa.Notice.classes) return false;
-            if (Lampa.NoticeClassLampa && Lampa.Notice.addClass && !Lampa.Notice.classes[NOTICE_CLASS])
-                Lampa.Notice.addClass(NOTICE_CLASS, new Lampa.NoticeClassLampa({ name: META.name, db_name: 'epwatchlite_notice' }));
+            if (Lampa.NoticeClassLampa && Lampa.Notice.addClass && !Lampa.Notice.classes[NOTICE_CLASS]) {
+                var cls = new Lampa.NoticeClassLampa({ name: L('epwlite_menu'), db_name: 'epwatchlite_notice' });
+                var baseEmpty = cls.empty, basePush = cls.push;
+                cls.empty = function () { return baseEmpty.call(cls, '', L('epwlite_history_empty')); };
+                cls.push = function (el, resolve, reject) {
+                    basePush.call(cls, el, function (r) { trimHistory(cls); if (resolve) resolve(r); }, reject);
+                };
+                Lampa.Notice.addClass(NOTICE_CLASS, cls);
+                setTimeout(function () { trimHistory(cls); }, 10000);
+            }
             noticeTarget = Lampa.Notice.classes[NOTICE_CLASS] ? NOTICE_CLASS : 'lampa';
             return !!Lampa.Notice.classes[noticeTarget];
         } catch (e) { return false; }
+    }
+
+    function trimHistory(cls) {
+        try {
+            if (!cls.db || typeof cls.db.getData !== 'function' || typeof cls.db.deleteData !== 'function') return;
+            cls.db.getData('all').then(function (all) {
+                var list = (Array.isArray(all) ? all : []).filter(function (n) { return n && n.id; })
+                    .sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
+                if (list.length <= CFG.history_max) return;
+                return Promise.all(list.slice(CFG.history_max).map(function (n) {
+                    return cls.db.deleteData('all', n.id)['catch'](function () {});
+                })).then(function () { if (typeof cls.update === 'function') cls.update(); });
+            })['catch'](function () {});
+        } catch (e) {}
+    }
+
+    function openHistory() {
+        if (!noticeReady() || typeof Lampa.Notice.open !== 'function') return noty(L('epwlite_history_empty'));
+        var prev = Lampa.Notice.display || 'all';
+        try {
+            Lampa.Notice.display = noticeTarget;
+            Lampa.Notice.open();
+        } catch (e) { noty(L('epwlite_err_unknown')); }
+        Lampa.Notice.display = prev;
     }
 
     function pushNotice(el) {
@@ -1170,7 +1371,7 @@
     }
 
     function goneReason(r) {
-        return L(r === 'plugin' ? 'epwlite_gone_plugin' : r === 'source' ? 'epwlite_gone_source' : r === 'rch' ? 'epwlite_gone_rch' : 'epwlite_gone_server');
+        return L(r === 'plugin' ? 'epwlite_gone_plugin' : r === 'source' ? 'epwlite_gone_source' : r === 'unsupported' ? 'epwlite_gone_unsupported' : 'epwlite_gone_server');
     }
 
     function noticeGone(sub, title) {
@@ -1321,7 +1522,7 @@
         ]).then(function (r) {
             loading(false);
             if (ctx.cancelled) return;
-            ctx.plugins = r[0] || [];
+            ctx.plugins = (r[0] || []).filter(function (p) { return supports(p, ctx.kind); });
             ctx.back = function () { rootMenu(ctx); };
             rootMenu(ctx);
         });
@@ -1344,11 +1545,11 @@
         if (items.length) items.push({ title: '', separator: true });
         if (ctx.kind === 'tv') items.push({ title: L('epwlite_tmdb_mode'), subtitle: L('epwlite_tmdb_mode_sub'), tmdb: true });
         if (!ctx.plugins.length) {
-            items.push({ title: L('epwlite_no_plugins'), subtitle: L('epwlite_no_plugins_sub'), noenter: true });
+            items.push({ title: L('epwlite_no_plugins'), subtitle: esc(L('epwlite_no_plugins_sub', adapterNames())), noenter: true });
         } else {
             items.push({ title: L(ctx.kind === 'tv' ? 'epwlite_plugins_head' : 'epwlite_plugins_head_movie'), separator: true });
             ctx.plugins.forEach(function (p) {
-                items.push({ title: '🧩 ' + esc(p.name), subtitle: esc(hostLabel(p.host)), plugin: p });
+                items.push({ title: '🧩 ' + esc(p.name), subtitle: esc(p.label), plugin: p });
             });
         }
         Lampa.Select.show({
@@ -1374,14 +1575,14 @@
         ctx.plugin = plugin;
         ctx.cancelled = false;
         loading(true, function () { ctx.cancelled = true; });
-        lpEvents(plugin, ctx.sp, ctx.kind === 'tv' ? 1 : 0).then(function (ev) {
+        srcList(plugin, ctx.sp, ctx.kind === 'tv' ? 1 : 0).then(function (ev) {
             loading(false);
             if (ctx.cancelled) return;
             if (!ev.ok) {
-                noty(ev.accsdb ? (ev.msg || L('epwlite_err_access')) : L('epwlite_err_network'));
+                noty(ev.msg || L('epwlite_err_network'));
                 return ctx.back();
             }
-            var list = ev.list.filter(function (e) { return !e.rch; });
+            var list = ev.list.filter(function (e) { return !e.unsupported; });
             if (!list.length) { noty(L('epwlite_no_sources')); return ctx.back(); }
             list = list.filter(function (e) { return e.show; }).concat(list.filter(function (e) { return !e.show; }));
             var items = [];
@@ -1456,21 +1657,21 @@
         var p = ctx.plugin;
         ctx.cancelled = false;
         loading(true, function () { ctx.cancelled = true; });
-        (link ? Promise.resolve(null) : lpSearch(p, entry, ctx.sp, false)).then(function (sr) {
+        (link ? Promise.resolve(null) : srcSearch(p, entry, ctx.sp, false)).then(function (sr) {
             if (ctx.cancelled) return loading(false);
-            if (sr && sr.rch) { loading(false); noty(L('epwlite_source_rch')); return ctx.backSources(); }
+            if (sr && sr.unsupported) { loading(false); noty(L('epwlite_source_unsupported', sr.unsupported)); return ctx.backSources(); }
             if (sr && sr.candidates.length) {
                 loading(false);
                 if (sr.candidates.length === 1) return tvSource(ctx, entry, sr.candidates[0].link);
                 return pickCandidate(ctx, entry.name, sr.candidates, function (lnk) { tvSource(ctx, entry, lnk); });
             }
             var e2 = withLink(entry, link);
-            return (sr ? Promise.resolve(sr.seasons) : lpDiscoverSeasons(p, e2, ctx.sp)).then(function (seasons) {
-                return lpProbe(p, e2, ctx.sp, 1, '').then(function (pr) {
+            return (sr && sr.seasons ? Promise.resolve(sr.seasons) : srcSeasons(p, e2, ctx.sp)).then(function (seasons) {
+                return srcProbe(p, e2, ctx.sp, 1, '').then(function (pr) {
                     loading(false);
                     if (ctx.cancelled) return;
                     var voices = pr.voices.filter(function (v) { return trim(v.name); });
-                    if (!voices.length) { noty(L('epwlite_no_voices')); return ctx.backSources(); }
+                    if (!voices.length) { noty(L(pr.error ? 'epwlite_err_network' : 'epwlite_no_voices')); return ctx.backSources(); }
                     Lampa.Select.show({
                         title: esc(entry.name) + (seasons.length ? ' · ' + L('epwlite_bal_seasons') + ' ' + seasons.join(', ') : ''),
                         items: voices.map(function (v) { return { title: '🎙 ' + esc(trim(v.name)), voice: trim(v.name) }; }),
@@ -1521,7 +1722,8 @@
             poster_path: ctx.meta.poster_path || ctx.card.poster_path || '',
             sp: ctx.sp,
             plugin: p ? p.url : '',
-            plugin_host: p ? p.host : '',
+            adapter: p ? p.adapter : '',
+            plugin_key: p ? p.key : '',
             plugin_name: p ? p.name : '',
             balanser: '',
             bname: '',
@@ -1574,7 +1776,10 @@
             sub.show_status = show.status;
             sub.next_air_date = show.next_air_date;
             if (!e2) return;
-            return lpProbe(p, e2, ctx.sp, es.effectiveSeason, voice).then(function (pr) { sub.last_voice_episode = pr.maxEpisode; });
+            return srcProbe(p, e2, ctx.sp, es.effectiveSeason, voice).then(function (pr) {
+                if (pr.error) throw new Error('probe');
+                sub.last_voice_episode = pr.maxEpisode;
+            });
         }).then(function () {
             finishSub(ctx, sub, voice ? L('epwlite_subscribed_v') + voice : L('epwlite_subscribed'));
         })['catch'](function () {
@@ -1586,10 +1791,10 @@
     function movieSource(ctx, entry) {
         ctx.cancelled = false;
         loading(true, function () { ctx.cancelled = true; });
-        lpSearch(ctx.plugin, entry, ctx.sp, true).then(function (sr) {
+        srcSearch(ctx.plugin, entry, ctx.sp, true).then(function (sr) {
             loading(false);
             if (ctx.cancelled) return;
-            if (sr.rch) { noty(L('epwlite_source_rch')); return ctx.backSources(); }
+            if (sr.unsupported) { noty(L('epwlite_source_unsupported', sr.unsupported)); return ctx.backSources(); }
             if (sr.candidates.length) {
                 return pickCandidate(ctx, entry.name, sr.candidates, function (lnk) { subscribeMovie(ctx, entry, lnk); },
                     { title: L('epwlite_movie_wait_exact'), subtitle: L('epwlite_movie_wait_exact_sub') });
@@ -1609,10 +1814,10 @@
         ctx.cancelled = false;
         loading(true, function () { ctx.cancelled = true; });
         var targets = entry ? Promise.resolve([withLink(entry, link)])
-            : lpEvents(p, ctx.sp, 0).then(function (ev) { return ev.ok ? ev.list.filter(function (e) { return !e.rch && e.show; }) : []; });
+            : srcList(p, ctx.sp, 0).then(function (ev) { return ev.ok ? ev.list.filter(function (e) { return !e.unsupported && e.show; }) : []; });
         targets.then(function (list) {
             return mapLimit(list, 3, function (e) {
-                return lpProbeMovie(p, e, ctx.sp).then(function (r) { return { e: e, r: r }; });
+                return srcProbeMovie(p, e, ctx.sp).then(function (r) { return { e: e, r: r }; });
             });
         }).then(function (results) {
             var seen = [];
@@ -1736,13 +1941,13 @@
         loading(true);
         allPlugins().then(function (list) {
             loading(false);
-            list = list.filter(function (d) { return d.kind === 'lampac'; })
-                .concat(list.filter(function (d) { return d.kind !== 'lampac'; }));
+            list = list.filter(function (d) { return d.kind === 'ok'; })
+                .concat(list.filter(function (d) { return d.kind !== 'ok'; }));
             var items = list.map(function (d) {
-                var ok = d.kind === 'lampac';
+                var ok = d.kind === 'ok', ad = ok ? adapterOf(d.adapter) : null;
                 return {
                     title: (ok ? '✅ ' : '⛔ ') + esc(d.name),
-                    subtitle: ok ? esc(hostLabel(d.host)) + ' · ' + L('epwlite_plugin_ok')
+                    subtitle: ok ? esc(d.label) + ' · ' + esc((ad && ad.name) || d.adapter) + ' · ' + L('epwlite_plugin_ok')
                         : esc(d.url) + ' · ' + L(d.kind === 'unknown' ? 'epwlite_plugin_unknown' : 'epwlite_plugin_bad'),
                     noenter: true
                 };
@@ -1816,6 +2021,13 @@
             field: { name: L('epwlite_settings_plugins'), description: L('epwlite_settings_plugins_desc') },
             onChange: function () { showPluginsInfo(); }
         });
+
+        Lampa.SettingsApi.addParam({
+            component: 'epwatchlite',
+            param: { name: 'epwlite_history', type: 'button' },
+            field: { name: L('epwlite_settings_history'), description: L('epwlite_settings_history_desc') },
+            onChange: function () { openHistory(); }
+        });
     }
 
     function injectStyles() {
@@ -1836,6 +2048,31 @@
         document.head.appendChild(style);
     }
 
+    if (!Array.isArray(window.epwatch_adapters)) window.epwatch_adapters = [];
+
+    window.EpWatchLite = {
+        version: META.version,
+        adapters: function () { return adapters().map(function (a) { return a.id; }); },
+        tools: {
+            http: http,
+            tmdb: function (path) {
+                var url = appendQs(path, 'api_key=' + tmdbKey());
+                try { url = Lampa.TMDB.api(url); } catch (e) { url = 'https://api.themoviedb.org/3/' + url; }
+                return http(url, 15000).then(function (r) { return r.ok ? parseJson(r.text) : null; });
+            },
+            json: parseJson,
+            trim: trim,
+            lc: lc,
+            appendQs: appendQs,
+            absUrl: absUrl,
+            originOf: originOf,
+            hostLabel: hostLabel,
+            pickSimilar: pickSimilar,
+            today: today,
+            lang: resolveLang
+        }
+    };
+
     function init() {
         try { Lampa.Lang.add(DICT); } catch (e) {}
         injectStyles();
@@ -1843,10 +2080,475 @@
         setTimeout(addMenu, 500);
         bindFull();
         addSettings();
-        if (loadSubs().length) setTimeout(noticeReady, 5000);
+        setTimeout(noticeReady, 3000);
         schedule(CFG.start_delay);
     }
 
     if (window.appready) init();
     else Lampa.Listener.follow('app', function (e) { if (e.type === 'ready') init(); });
+})();
+
+(function () {
+    'use strict';
+
+    var MIN = 60 * 1000;
+
+    function T() { return (window.EpWatchLite && window.EpWatchLite.tools) || null; }
+
+    function trim(s) { return ('' + (s == null ? '' : s)).replace(/^\s+|\s+$/g, ''); }
+
+    function lc(s) { return trim(s).toLowerCase(); }
+
+    function enc(s) { return encodeURIComponent(s); }
+
+    function store(key, def) {
+        try { var v = Lampa.Storage.get(key, def); return v == null ? def : v; } catch (e) { return def; }
+    }
+
+    function hostLabel(url) { return ('' + (url || '')).replace(/^https?:\/\//i, '').replace(/[\/?#].*$/, ''); }
+
+    function isAndroid() {
+        try { return typeof window.AndroidJS !== 'undefined' || !!(Lampa.Platform && Lampa.Platform.is && Lampa.Platform.is('android')); }
+        catch (e) { return false; }
+    }
+
+    function addName(list, seen, name) {
+        name = trim(name);
+        if (name && !seen[lc(name)]) { seen[lc(name)] = 1; list.push(name); }
+    }
+
+    var memo = {};
+
+    function cached(key, ttl, make) {
+        var m = memo[key];
+        if (m && m.exp > Date.now()) return m.p;
+        var p = Promise.resolve().then(make);
+        memo[key] = { p: p, exp: Date.now() + ttl };
+        p.then(function (v) { if (v == null || v.down) delete memo[key]; }, function () { delete memo[key]; });
+        return p;
+    }
+
+    function fgDecoder(src) {
+        var m = /(\w+)\s*=\s*\(function\s*\(\s*\w+\s*\)\s*\{\s*return\s+function\s*\(\s*\w+\s*\)\s*\{[\s\S]{0,300}?\}\s*\}\s*\)\s*\(\s*['"]([^'"]+)['"]\s*\)/.exec(src);
+        if (!m) return { name: '__epwl_none__', decode: function (s) { return s; } };
+        var key = m[2];
+        return {
+            name: m[1],
+            decode: function (hex) {
+                var s = '';
+                for (var i = 0; i + 4 <= hex.length; i += 4)
+                    s += String.fromCharCode(parseInt(hex.substr(i, 4), 16) ^ key.charCodeAt((i / 4) % key.length));
+                return s;
+            }
+        };
+    }
+
+    function fgValue(src, dec, name) {
+        var m = new RegExp('\\b' + name + '\\s*=\\s*(?:' + dec.name + '\\(\\s*[\'"]([0-9a-f]+)[\'"]\\s*\\)|[\'"]([^\'"]*)[\'"])').exec(src);
+        return m ? (m[1] ? dec.decode(m[1]) : m[2]) : '';
+    }
+
+    function fgList(src, dec, name) {
+        var m = new RegExp('\\b' + name + '\\s*=\\s*\\[([^\\]]*)\\]').exec(src);
+        if (!m) return [];
+        var out = [], x, re = new RegExp(dec.name + '\\(\\s*[\'"]([0-9a-f]+)[\'"]\\s*\\)|[\'"]([^\'"]+)[\'"]', 'g');
+        while ((x = re.exec(m[1]))) out.push((x[1] ? dec.decode(x[1]) : x[2]).replace(/\/+$/, ''));
+        return out.filter(function (h) { return /^https?:\/\//i.test(h); });
+    }
+
+    function fgSlice(text, from) {
+        var open = text.charAt(from), close = open === '{' ? '}' : ']', depth = 0, quote = '';
+        for (var i = from; i < text.length; i++) {
+            var ch = text.charAt(i);
+            if (quote) {
+                if (ch === '\\') i++;
+                else if (ch === quote) quote = '';
+                continue;
+            }
+            if (ch === '"' || ch === "'") { quote = ch; continue; }
+            if (ch === open) depth++;
+            else if (ch === close && --depth === 0) return text.substring(from, i + 1);
+        }
+        return '';
+    }
+
+    function fgBlock(text, key, open) {
+        var m = new RegExp('(^|[^\\w$])' + key + '\\s*:\\s*\\' + open).exec(text);
+        return m ? fgSlice(text, m.index + m[0].length - 1) : '';
+    }
+
+    function fgJson(text, key, open) {
+        var b = fgBlock(text, key, open);
+        if (!b) return null;
+        try { return JSON.parse(b); } catch (e) { return null; }
+    }
+
+    function fgParse(html) {
+        if (typeof html !== 'string') return null;
+        try {
+            if (window.fligel_online && typeof window.fligel_online.parse === 'function') {
+                var own = window.fligel_online.parse(html);
+                if (own) return own;
+            }
+        } catch (e) {}
+        var call = /makePlayer\s*\(\s*\{/.exec(html);
+        if (!call) return null;
+        var block = fgSlice(html, html.indexOf('{', call.index));
+        if (!block) return null;
+        var seasons = fgJson(block, 'seasons', '[');
+        if (seasons && seasons.length) return { type: 'serial', seasons: seasons };
+        var source = fgBlock(block, 'source', '{');
+        if (!source || !/(hls|dash|dasha)["']?\s*:\s*["']\S/.test(source)) return null;
+        return { type: 'movie', source: { audio: fgJson(source, 'audio', '{') } };
+    }
+
+    function fgEmbed(d, kind, id) {
+        return cached('fg:' + d.key + ':' + kind + ':' + id, 10 * MIN, function () {
+            var url = d.embed + '/embed/' + kind + '/' + enc(id) + '?host=' + enc(d.consumer || '');
+            return T().http(url, 20000).then(function (r) {
+                if (r.ok) return { ex: fgParse(r.text) };
+                if (r.status === 404) return { ex: null };
+                return { down: true };
+            });
+        });
+    }
+
+    function fgHeaders(d) {
+        if (!d.auth) return { Accept: 'application/json' };
+        var b64 = '';
+        try { b64 = Lampa.Base64 ? Lampa.Base64.encode(d.auth) : window.btoa(d.auth); }
+        catch (e) { try { b64 = window.btoa(d.auth); } catch (e2) {} }
+        return { Authorization: 'Basic ' + b64, Accept: 'application/json' };
+    }
+
+    function fgApiHost(d) {
+        return cached('fgapi:' + d.key, 30 * MIN, function () {
+            var hosts = (d.api || []).slice();
+            function next() {
+                if (!hosts.length) return null;
+                var h = hosts.shift();
+                return T().http(h + '/list?type=film&limit=1', 10000, fgHeaders(d)).then(function (r) {
+                    return r.ok && T().json(r.text) ? h : next();
+                });
+            }
+            return next();
+        });
+    }
+
+    function fgExtract(d, sp, link) {
+        var m = /^cat:(\d+)$/.exec(link || '');
+        if (m) {
+            return cached('fgkp:' + d.key + ':' + m[1], 24 * 60 * MIN, function () {
+                return fgApiHost(d).then(function (h) {
+                    if (!h) return null;
+                    return T().http(h + '/info/' + m[1], 15000, fgHeaders(d)).then(function (r) {
+                        if (!r.ok) return null;
+                        var jo = T().json(r.text);
+                        var kp = jo && jo.info ? parseInt(jo.info.id, 10) : 0;
+                        return { kp: kp > 0 ? kp : 0 };
+                    });
+                });
+            }).then(function (x) {
+                if (!x) return { down: true };
+                return x.kp ? fgEmbed(d, 'kp', x.kp) : { ex: null };
+            });
+        }
+        if (!sp.imdb_id) return Promise.resolve({ ex: null });
+        return fgEmbed(d, 'imdb', sp.imdb_id);
+    }
+
+    var FLIGELO = {
+        id: 'fligelo',
+        name: 'Fligelo',
+        detect: function (src) {
+            if (src.indexOf('fligel_online') < 0 || src.indexOf('makePlayer') < 0) return null;
+            var dec = fgDecoder(src);
+            var embed = fgValue(src, dec, 'EMBED_HOST').replace(/\/+$/, '');
+            if (!/^https?:\/\//i.test(embed)) return null;
+            return {
+                key: embed,
+                label: hostLabel(embed),
+                embed: embed,
+                consumer: fgValue(src, dec, 'CONSUMER'),
+                api: fgList(src, dec, 'API_HOSTS'),
+                auth: fgValue(src, dec, 'API_AUTH')
+            };
+        },
+        sources: function (d, sp) {
+            function one(show) { return { ok: true, list: [{ id: 'fligelo', name: 'Fligelo', show: show }] }; }
+            if (!sp.imdb_id) return Promise.resolve(one(false));
+            return fgEmbed(d, 'imdb', sp.imdb_id).then(function (r) { return r.down ? { ok: false } : one(!!r.ex); });
+        },
+        search: function (d, entry, sp) {
+            return (sp.imdb_id ? fgEmbed(d, 'imdb', sp.imdb_id) : Promise.resolve({ ex: null })).then(function (r) {
+                if (r.ex) return { candidates: [] };
+                return fgApiHost(d).then(function (h) {
+                    if (!h) return { candidates: [] };
+                    var queries = [sp.title, sp.original_title].filter(function (q, i, all) { return q && all.indexOf(q) === i; });
+                    function near(items) {
+                        return items.filter(function (it) { return sp.year && Math.abs((parseInt(it.year, 10) || 0) - sp.year) <= 1; });
+                    }
+                    function ask(i, fallback) {
+                        if (i >= queries.length) return Promise.resolve(fallback);
+                        return T().http(h + '/search?q=' + enc(queries[i]), 15000, fgHeaders(d)).then(function (res) {
+                            var jo = res.ok ? T().json(res.text) : null;
+                            var items = (jo && Array.isArray(jo.items)) ? jo.items : [];
+                            return near(items).length ? items : ask(i + 1, fallback.length ? fallback : items);
+                        });
+                    }
+                    return ask(0, []).then(function (items) {
+                        var close = near(items);
+                        if (close.length) items = close;
+                        return {
+                            candidates: items.slice(0, 20).map(function (it, i) {
+                                return {
+                                    title: (it.name || '') + (it.origin_name && it.origin_name !== it.name ? ' / ' + it.origin_name : ''),
+                                    year: it.year,
+                                    details: it.quality || '',
+                                    img: it.poster || '',
+                                    link: 'cat:' + it.id,
+                                    recommended: close.length > 0 && i === 0
+                                };
+                            })
+                        };
+                    });
+                });
+            });
+        },
+        seasons: function (d, entry, sp) {
+            return fgExtract(d, sp, entry.link).then(function (r) {
+                if (!r.ex || r.ex.type !== 'serial') return [];
+                return r.ex.seasons.map(function (s) { return parseInt(s.season, 10) || 0; }).sort(function (a, b) { return a - b; });
+            });
+        },
+        probe: function (d, entry, sp, season, voice) {
+            return fgExtract(d, sp, entry.link).then(function (r) {
+                var res = { maxEpisode: 0, voices: [], error: !!r.down }, seen = {};
+                if (!r.ex || r.ex.type !== 'serial') return res;
+                var s = null;
+                r.ex.seasons.forEach(function (x) { if ((parseInt(x.season, 10) || 0) === season) s = x; });
+                if (!s) return res;
+                (s.episodes || []).forEach(function (ep) {
+                    var names = (ep.audio && ep.audio.names) || [];
+                    names.forEach(function (n) { addName(res.voices, seen, n); });
+                    var n = parseInt(ep.episode, 10) || 0;
+                    if (n <= 0) return;
+                    if (voice && !names.some(function (x) { return lc(x) === lc(voice); })) return;
+                    if (n > res.maxEpisode) res.maxEpisode = n;
+                });
+                return res;
+            });
+        },
+        probeMovie: function (d, entry, sp) {
+            return fgExtract(d, sp, entry.link).then(function (r) {
+                if (!r.ex || r.ex.type !== 'movie') return { available: false, voices: [] };
+                return { available: true, voices: (r.ex.source && r.ex.source.audio && r.ex.source.audio.names) || [] };
+            });
+        }
+    };
+
+    var UA_BROWSER = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+    var ukLibs = {};
+    var ukClients = {};
+
+    function ukLib(src) {
+        var head = '(function () {';
+        var a = src.indexOf(head), b = src.indexOf('if (window.uakino_torrents_plugin) return;');
+        if (a < 0 || b < 0) return null;
+        b = src.lastIndexOf(head, b);
+        if (b <= a) return null;
+        var body = src.slice(a + head.length, b).replace(/\r?\n\(function \(\) \{\r?\n/, '\n');
+        try {
+            var lib = (new Function(body + '\nreturn typeof UAKinoLib !== "undefined" ? UAKinoLib : null;'))();
+            return lib && typeof lib.createClient === 'function' && Array.isArray(lib.SOURCES) ? lib : null;
+        } catch (e) { return null; }
+    }
+
+    function ukSources(d) {
+        var lib = ukLibs[d.url];
+        if (!lib) return [];
+        return lib.SOURCES.filter(function (s) {
+            if (!s || s.id === 'uakino') return false;
+            var v = store('uakino_src_' + s.id, true);
+            return v !== false && v !== 'false';
+        });
+    }
+
+    function ukSiteHost(source) { return trim(store('uakino_host_' + source.id, '') || source.host).replace(/\/+$/, ''); }
+
+    function ukSameSite(url, host) {
+        function bare(u) { return ('' + u).replace(/^https?:\/\/(www\.)?([^\/:]+).*$/, '$2'); }
+        return bare(url) === bare(host);
+    }
+
+    function ukFetch(d, source, host) {
+        return function (url, o) {
+            o = o || {};
+            var cookie = ukSameSite(url, host) ? trim(store('uakino_cookie_' + source.id, '')) : '';
+            var target = url, headers = null;
+            if (isAndroid() || !d.server) {
+                headers = {
+                    'User-Agent': UA_BROWSER,
+                    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'uk-UA,uk;q=0.9,en;q=0.8',
+                    Referer: o.referer || url.replace(/^(https?:\/\/[^\/]+).*$/, '$1/')
+                };
+                if (o.xhr) headers['X-Requested-With'] = 'XMLHttpRequest';
+                if (cookie) headers.Cookie = cookie;
+            }
+            else {
+                target = d.server + '/proxy?url=' + enc(url) + (o.referer ? '&referer=' + enc(o.referer) : '') +
+                    (o.xhr ? '&xhr=1' : '') + (cookie ? '&cookie=' + enc(cookie) : '') + (o.backup ? '&backup=1' : '');
+            }
+            return T().http(target, 20000, headers, o.body || null, o.body ? 'application/x-www-form-urlencoded; charset=UTF-8' : '').then(function (r) {
+                if (!r.ok) { var err = new Error('HTTP ' + r.status); err.status = r.status; throw err; }
+                return r.text;
+            });
+        };
+    }
+
+    function ukClient(d, id) {
+        var lib = ukLibs[d.url];
+        if (!lib) return null;
+        var source = null;
+        lib.SOURCES.forEach(function (s) { if (s && s.id === id) source = s; });
+        if (!source) return null;
+        var host = ukSiteHost(source), k = d.url + '|' + id;
+        if (!ukClients[k] || ukClients[k].host !== host)
+            ukClients[k] = { host: host, client: lib.createClient({ source: source, host: host, fetchText: ukFetch(d, source, host) }) };
+        return ukClients[k].client;
+    }
+
+    function ukTitle(sp, serial) {
+        if (T().lang() === 'uk' || !sp.tmdb_id) return Promise.resolve(sp.title);
+        return cached('uktitle:' + (serial ? 'tv' : 'movie') + ':' + sp.tmdb_id, 24 * 60 * MIN, function () {
+            return T().tmdb((serial ? 'tv/' : 'movie/') + sp.tmdb_id + '?language=uk-UA').then(function (jo) {
+                return jo && (jo.name || jo.title) ? { title: jo.name || jo.title } : null;
+            });
+        }).then(function (x) { return x ? x.title : sp.title; });
+    }
+
+    function ukFind(d, entry, sp, serial) {
+        var c = ukClient(d, entry.balanser);
+        if (!c) return Promise.resolve([]);
+        return ukTitle(sp, serial).then(function (title) {
+            var alt = [sp.title, sp.original_title].filter(function (x) { return x && x !== title; });
+            return c.online.findPages({ title: title, original: sp.original_title || '', year: sp.year || undefined, serial: !!serial, titles: alt });
+        }).then(function (pages) { return Array.isArray(pages) ? pages : []; }, function () { return []; });
+    }
+
+    function ukHasSeason(page, season) {
+        return (page.items || []).some(function (it) { return (parseInt(it.season || page.season || 1, 10) || 1) === season; });
+    }
+
+    function ukBest(pages, season) {
+        var best = null;
+        pages.forEach(function (p) {
+            if (!p || !p.url || (p.score || 0) < 100) return;
+            if (season && p.season && p.season !== season) return;
+            if (!best || (p.score || 0) > (best.score || 0)) best = p;
+        });
+        return best;
+    }
+
+    function ukNetError(e) {
+        var st = e && e.status;
+        if (st === 0 || st === 429 || st >= 500) return true;
+        return /HTTP (0|429|5\d\d)\b/.test('' + ((e && e.message) || e || ''));
+    }
+
+    function ukLoad(d, entry, sp, serial, season) {
+        var c = ukClient(d, entry.balanser), state = { page: null, failed: false };
+        if (!c) { state.failed = true; return Promise.resolve(state); }
+        function load(url) {
+            return c.online.loadPage(url).then(function (p) { return p || null; }, function (e) {
+                if (ukNetError(e)) state.failed = true;
+                return null;
+            });
+        }
+        return (entry.link ? load(entry.link) : Promise.resolve(null)).then(function (page) {
+            state.page = page;
+            if (page && (!season || ukHasSeason(page, season))) return state;
+            return ukFind(d, entry, sp, serial).then(function (pages) {
+                var best = ukBest(pages, season);
+                if (!best || (page && best.url === entry.link)) return state;
+                return load(best.url).then(function (p2) {
+                    if (p2) { state.page = p2; state.failed = false; }
+                    return state;
+                });
+            });
+        });
+    }
+
+    var UAKINO = {
+        id: 'uakino',
+        name: 'UAKino',
+        detect: function (src, plugin) {
+            if (src.indexOf('uakino_torrents_plugin') < 0 || src.indexOf('UAKinoLib') < 0) return null;
+            var lib = ukLib(src);
+            if (!lib) return null;
+            ukLibs[plugin.url] = lib;
+            var m = /BUILT_IN_SERVER\s*=\s*["']([^"']*)["']/.exec(src);
+            var server = m && /^https?:\/\//i.test(m[1]) ? m[1].replace(/\/+$/, '') : '';
+            return { key: server || plugin.url, label: server ? hostLabel(server) : 'UAKino', server: server };
+        },
+        sources: function (d) {
+            if (!ukLibs[d.url]) return Promise.resolve({ ok: false });
+            return Promise.resolve({ ok: true, list: ukSources(d).map(function (s) { return { id: s.id, name: s.name }; }) });
+        },
+        search: function (d, entry, sp, movie) {
+            return ukFind(d, entry, sp, !movie).then(function (pages) {
+                pages = pages.filter(function (p) { return p && p.url; })
+                    .sort(function (a, b) { return (b.score || 0) - (a.score || 0); });
+                return {
+                    candidates: pages.slice(0, 20).map(function (p, i) {
+                        return {
+                            title: p.title || '',
+                            year: p.year || 0,
+                            details: p.season ? 'S' + p.season : '',
+                            img: p.poster || '',
+                            link: p.url,
+                            recommended: i === 0 && (p.score || 0) >= 100
+                        };
+                    })
+                };
+            });
+        },
+        seasons: function (d, entry, sp) {
+            return ukLoad(d, entry, sp, true, 0).then(function (st) {
+                var page = st.page, out = [];
+                ((page && page.items) || []).forEach(function (it) {
+                    var s = parseInt(it.season || page.season || 1, 10) || 1;
+                    if (out.indexOf(s) < 0) out.push(s);
+                });
+                return out.sort(function (a, b) { return a - b; });
+            });
+        },
+        probe: function (d, entry, sp, season, voice) {
+            return ukLoad(d, entry, sp, true, season).then(function (st) {
+                var page = st.page, res = { maxEpisode: 0, voices: [], error: st.failed }, seen = {};
+                if (!page) return res;
+                (page.items || []).forEach(function (it) {
+                    if ((parseInt(it.season || page.season || 1, 10) || 1) !== season) return;
+                    addName(res.voices, seen, it.group);
+                    var e = parseInt(it.episode, 10) || 0;
+                    if (e <= 0 || (voice && lc(it.group) !== lc(voice))) return;
+                    if (e > res.maxEpisode) res.maxEpisode = e;
+                });
+                return res;
+            });
+        },
+        probeMovie: function (d, entry, sp) {
+            return ukLoad(d, entry, sp, false, 0).then(function (st) {
+                var page = st.page, voices = [], seen = {};
+                ((page && page.items) || []).forEach(function (it) { addName(voices, seen, it.group); });
+                return { available: !!(page && page.items && page.items.length), voices: voices };
+            });
+        }
+    };
+
+    var LITE_ADAPTERS = [FLIGELO, UAKINO];
+
+    var registry = Array.isArray(window.epwatch_adapters) ? window.epwatch_adapters : (window.epwatch_adapters = []);
+    LITE_ADAPTERS.forEach(function (a) { registry.push(a); });
 })();
